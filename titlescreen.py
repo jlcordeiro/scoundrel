@@ -34,3 +34,30 @@ class TitleScreen:
         btn_text = self.button_font.render("New Game", True, WHITE)
         btn_rect = btn_text.get_rect(center=self.button_rect.center)
         self.screen.blit(btn_text, btn_rect)
+
+
+class ResultScreen:
+    def __init__(self, screen):
+        self.screen = screen
+        self.title_font = pygame.font.SysFont(None, 100)
+        self.button_font = pygame.font.SysFont(None, 48)
+        
+    def draw(self, message, lines):
+        """
+        message: "You won!" or "You lost"
+        lines: list of strings for the text below the title
+        """
+        self.screen.fill(DARK_GRAY)
+
+        # ---- Title ----
+        title_surface = self.title_font.render(message, True, WHITE)
+        title_rect = title_surface.get_rect(center=(WIDTH // 2, HEIGHT // 3))
+        self.screen.blit(title_surface, title_rect)
+
+        # ---- Body text ----
+        y = HEIGHT // 2
+        for line in lines:
+            line_surface = self.button_font.render(line, True, WHITE)
+            line_rect = line_surface.get_rect(center=(WIDTH // 2, y))
+            self.screen.blit(line_surface, line_rect)
+            y += 60  # spacing between lines

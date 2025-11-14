@@ -7,7 +7,7 @@ import Deck
 from Deck import Deck, CardHand, Card
 from widgets import *
 from gamelogic import *
-from titlescreen import TitleScreen
+from titlescreen import TitleScreen, ResultScreen
 
 
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
@@ -20,14 +20,12 @@ pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_ARROW)
 clock = pygame.time.Clock()
 
 title_screen = TitleScreen(screen)
+result_screen = ResultScreen(screen)
 
-game_controller = GameController()
-game_layout = LayoutMainGame(screen)
 
 def show_title_screen():
     """ Show the title screen and wait for the user to click "New Game"
     """
-    title_screen = TitleScreen(screen)
     redraw = True
     while True:
         for event in pygame.event.get():
@@ -47,8 +45,31 @@ def show_title_screen():
             clock.tick(60)
 
 
+def show_result_screen(message, lines):
+    """ Show the title screen and wait for the user to click "New Game"
+    """
+    redraw = True
+    while True:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                return
+
+        if redraw:
+            result_screen.draw(message, lines)
+            pygame.display.flip()
+            redraw = False
+            clock.tick(60)
+            
+
 while True:
     show_title_screen()
+    
+    game_controller = GameController()
+    game_layout = LayoutMainGame(screen)
 
     redraw = True
     while not game_controller.is_finished():
@@ -56,6 +77,10 @@ while True:
         for event in pygame.event.get():
             if game_controller.is_finished():
                 break
+
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
 
             # ---------------------------------------------------------
             # 1. ESC KEY HANDLER
@@ -128,16 +153,23 @@ while True:
             game_layout.draw(game_controller.dungeon)    
         clock.tick(60)
             
+    deck = game_controller.dungeon.deck
+    hp = game_controller.dungeon.hp
+    monsters_left = sum([Deck.card_rank(c) for c in deck.deck if Deck.card_suit(c) in ('C', 'S')])
+    healing_left = sum([Deck.card_rank(c) for c in deck.deck if Deck.card_suit(c) in ('H')])
+    if hp <= 0:
+        message = "You lost!"
+        lines = [f"Score: -{monsters_left}"]
+    else:
+        message = "You won!"
 
-    if False:      
-        monsters_left = sum([Deck.card_rank(c) for c in deck.deck if Deck.card_suit(c) in ('C', 'S')])
-        healing_left = sum([Deck.card_rank(c) for c in deck.deck if Deck.card_suit(c) in ('H')])
-        if hp <= 0:
-            total_score = - monsters_left
-            print("You have been defeated! Total score:", total_score)
-        else:
-            total_score = hp + healing_left - monsters_left
-            print("You have cleared all rooms with total score:", total_score)
+        total_score = hp + healing_left - monsters_left
+        lines = [
+            f"Healing left in deck: {healing_left}",
+            f"Monsters left in deck: {monsters_left}",
+            f"Total score: {total_score}"
+        ]
+    show_result_screen(message, lines)
 
 
 pygame.quit()
