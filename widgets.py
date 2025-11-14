@@ -1,6 +1,6 @@
 import pygame
 from Deck import Deck
-from gamelogic import ROOM_SIZE
+from gamelogic import *
 
 WIDTH, HEIGHT = 1800, 600
 
@@ -9,6 +9,8 @@ CARD_WIDTH = 240
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
 GRAY = (200, 200, 200)
+DARK_GRAY = (40, 40, 40)
+LIGHT_GRAY = (70, 70, 70)
 
 font = pygame.font.SysFont(None, 36)
 
@@ -87,4 +89,53 @@ for i in range(ROOM_SIZE):
     
     fist_rect = pygame.Rect(10 + x, rect.bottom + 5, CARD_WIDTH - 40, 10)
     FIST_RECTS.append(fist_rect)
-    
+
+
+
+class LayoutMainGame:
+    def __init__(self, screen):
+        self.screen = screen
+
+        self.button_force_fists = Button(CARD_WIDTH - 20, 50, "Use Fists")
+        self.button_play = Button(160, 160, "PLAY")
+        self.button_skip = Button(160, 160, "SKIP")
+
+        self.button_play.visible = True
+        self.button_skip.visible = True
+
+        self.hp_bar = ProgressBar(10, 400, 600, 50, barcolor=(200, 0, 0))
+        self.cards_bar = ProgressBar(10, 460, 600, 50, barcolor=(0, 200, 0))
+
+
+    def draw(self, dungeon_state):
+        self.screen.fill((255, 255, 255))
+
+        # Draw buttons
+        self.button_play.draw_at(self.screen, 1020, 180)
+        self.button_skip.draw_at(self.screen, 1020, 10)
+
+        self.hp_bar.draw(self.screen, dungeon_state.hp, MAX_HP)
+        self.cards_bar.draw(self.screen, dungeon_state.deck.size(), dungeon_state.deck.initial_size())
+
+        for (idx, card) in enumerate(dungeon_state.room.cards):
+            rect = CARD_RECTS[idx]
+            first_rect = FIST_RECTS[idx]
+            chosen_card = dungeon_state.chosen_card
+
+            if card.used: continue
+            if chosen_card and chosen_card.card == card.card:
+                pygame.draw.rect(self.screen, (255, 0, 0), rect.inflate(10, 10), 51, border_radius=12)                    
+                self.button_force_fists.draw_at(self.screen, first_rect.left, first_rect.top)
+                        
+            self.screen.blit(CARD_IMGS[card.card], rect.topleft)
+            
+        if dungeon_state.weapon_current is not None:            
+            if dungeon_state.weapon_last_killed is not None:
+                killed_img = CARD_IMGS[dungeon_state.weapon_last_killed]
+                self.screen.blit(killed_img, (1220, 10))
+
+            weapon_img = CARD_IMGS[dungeon_state.weapon_current]
+            self.screen.blit(weapon_img, (1270, 10))
+        
+
+        pygame.display.flip()
