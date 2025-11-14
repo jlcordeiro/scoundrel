@@ -43,6 +43,9 @@ class Deck:
         rank = 1 + card % 13
         return 14 if rank == 1 else rank
     
+    def card_is_monster(card):
+        return Deck.card_suit(card) in ('C', 'S')
+    
     def size(self):
         return len(self.deck)
     

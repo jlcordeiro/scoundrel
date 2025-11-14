@@ -17,9 +17,11 @@ class Button:
 
     
     def draw_at(self, screen, x, y):
+        if self.visible == False:
+            return
+
         self.rect.x = x + 10
         self.rect.y = y
-        self.visible = True
         
         draw_color = self.color_on if self.toggled else self.color_off
         pygame.draw.rect(screen, draw_color, self.rect, border_radius=12)

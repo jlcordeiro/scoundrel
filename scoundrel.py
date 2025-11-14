@@ -85,6 +85,8 @@ offset_x, offset_y = 0, 0
 button_force_fists = Button(CARD_WIDTH - 20, 50, "Use Fists")
 button_play = Button(160, 160, "PLAY")
 button_skip = Button(160, 160, "SKIP")
+
+button_play.visible = True
 button_skip.visible = True
 
 hp_bar = ProgressBar(10, 400, 600, 50, barcolor=(200, 0, 0))
@@ -100,31 +102,70 @@ weapon_last_slain = None
 weapon_card = None
 weapon_last_killed = None
 
-def get_room_images(deck):
-    global all_images
-    result = []
-
-    i = 0
-    for card in deck.top(ROOM_SIZE):
-        img = all_images[card]
-        rect = img.get_rect(topleft=(10 + i * 250, 10))
-        result.append([rect, False])
-        i += 1
+CARD_RECTS = []
+FIST_RECTS = []
+card_height = all_images[0].get_height()
+for i in range(ROOM_SIZE):
+    x = 10 + i * (CARD_WIDTH + 10)
     
-    return result
+    rect = pygame.Rect(x, 10, CARD_WIDTH, card_height)
+    CARD_RECTS.append(rect)
+    
+    fist_rect = pygame.Rect(10 + x, rect.bottom + 5, CARD_WIDTH - 40, 10)
+    FIST_RECTS.append(fist_rect)
 
-def get_used_cards(card_rects):
-    used = []
-    l = len(card_rects)
-    for i in range(l):
-        if card_rects[i][1]:
-            used.append(deck.top(l)[i])
-    return used
+class Card:
+    def __init__(self, card):
+        self.card = card
+        self.used = False
+        self.selected = False
+
+class Room:
+    def __init__(self, deck):
+        self.cards = []
+        for card in deck.top(ROOM_SIZE):
+            self.cards.append(Card(card))
+        
+    def get_used(self):
+        return [c.card for c in self.cards if c.used]
 
 
-card_rects = get_room_images(deck)
+def draw_main_game():
+    screen.fill((255, 255, 255))
 
-debug_text = ""
+    # Draw buttons
+    button_play.draw_at(screen, 1020, 180)
+    button_skip.draw_at(screen, 1020, 10)
+
+    hp_bar.draw(screen, hp, max_hp)
+    cards_bar.draw(screen, deck.size(), test_deck.size())
+
+
+    for (idx, card) in enumerate(room.cards):
+        rect = CARD_RECTS[idx]
+        first_rect = FIST_RECTS[idx]
+
+        if card.used: continue
+        if chosen_card and chosen_card.card == card.card:
+            pygame.draw.rect(screen, (255, 0, 0), rect.inflate(10, 10), 51, border_radius=12)                    
+            button_force_fists.draw_at(screen, first_rect.left, first_rect.top)
+                    
+        screen.blit(all_images[card.card], rect.topleft)
+        
+    if weapon_current is not None and weapon_card is not None:            
+        if weapon_last_killed is not None:
+            killed_img = all_images[weapon_last_killed]
+            screen.blit(killed_img, (1220, 10))
+
+        weapon_img = all_images[weapon_card]
+        screen.blit(weapon_img, (1270, 10))
+    
+
+    pygame.display.flip()
+
+
+room = Room(deck)
+
 chosen_card = None
 redraw = True
 while hp > 0 and deck.size() >= ROOM_SIZE:
@@ -140,57 +181,64 @@ while hp > 0 and deck.size() >= ROOM_SIZE:
             pygame.quit()
             sys.exit()
 
-
         if event.type == pygame.MOUSEBUTTONDOWN:
-            for idx, val in enumerate(card_rects):
-                rect, used = val
-                if used: continue
-                if rect.collidepoint(event.pos):
-                    chosen_card = idx
+            for (idx, card) in enumerate(room.cards):
+                if not card.used and CARD_RECTS[idx].collidepoint(event.pos):
+                    chosen_card = card
                     redraw = True
+                
+                    if weapon_current \
+                        and Deck.card_is_monster(chosen_card.card) \
+                        and (weapon_last_slain is None or rank < (weapon_last_slain or 0)):
+                            button_force_fists.visible = True
+                            
                     break
+
             redraw = redraw or button_force_fists.toggle_if_clicked(event.pos)
 
             if button_skip.collideswith(event.pos):
-                if len(get_used_cards(card_rects)) == 0:
-                    deck.move_to_end(ROOM_SIZE)
-                    chosen_card = None
-                    card_rects = get_room_images(deck)
-                    button_skip.disable()
-                    button_force_fists.disable()
-                    redraw = True
+                deck.move_to_end(ROOM_SIZE)
+                chosen_card = None
+                room = Room(deck)
+                button_skip.disable()
+                button_force_fists.disable()
+                redraw = True
 
             if button_play.collideswith(event.pos):              
-                if chosen_card is not None:
-                    card = deck.top(ROOM_SIZE)[chosen_card]
-                    suit = Deck.card_suit(card)
+                if chosen_card is None:
+                    continue
 
-                    if suit in ('C', 'S'):
-                        prev_weapon_last_slain = weapon_last_slain
-                        (hp, weapon_current, weapon_last_slain) = battle(card, hp, weapon_current, weapon_last_slain, button_force_fists.toggled)
-                        if weapon_last_slain and weapon_last_slain != prev_weapon_last_slain:
-                            weapon_last_killed = card
-                    elif suit in ('H'):
-                        hp = heal(hp, card)
-                    elif suit == 'D':
-                        weapon_current = Deck.card_rank(card)
-                        weapon_card = card
-                        weapon_last_slain = None
-                        weapon_last_killed = None
-                    
-                    rect = card_rects[chosen_card]
-                    rect[1] = True  # Mark as used
-                    
-                    # if only one rect not used
-                    used_cards = get_used_cards(card_rects)
-                    if len(used_cards) == ROOM_SIZE - 1:
-                        deck.remove(used_cards)
-                        card_rects = get_room_images(deck)
-                        button_skip.visible = True
+                button_skip.visible = False
 
-                    chosen_card = None
-                    button_force_fists.disable()
-                    redraw = True
+                card = chosen_card.card
+                suit = Deck.card_suit(card)
+
+                if Deck.card_is_monster(card):
+                    prev_weapon_last_slain = weapon_last_slain
+                    (hp, weapon_current, weapon_last_slain) = battle(card, hp, weapon_current, weapon_last_slain, button_force_fists.toggled)
+                    if weapon_last_slain and weapon_last_slain != prev_weapon_last_slain:
+                        weapon_last_killed = card
+                        
+                elif suit in ('H'):
+                    hp = heal(hp, card)
+                elif suit == 'D':
+                    weapon_current = Deck.card_rank(card)
+                    weapon_card = card
+                    weapon_last_slain = None
+                    weapon_last_killed = None
+                
+                chosen_card.used = True  # Mark as used
+                
+                # if only one rect not used
+                used_cards = room.get_used()
+                if len(used_cards) == ROOM_SIZE - 1:
+                    deck.remove(used_cards)
+                    room = Room(deck)
+                    button_skip.visible = True
+
+                chosen_card = None
+                button_force_fists.disable()
+                redraw = True
 
         # ---- Mouse button up ----
         elif event.type == pygame.MOUSEBUTTONUP:
@@ -210,42 +258,7 @@ while hp > 0 and deck.size() >= ROOM_SIZE:
     # ---- Drawing ----
     if redraw:
         redraw = False
-        screen.fill((255, 255, 255))
-
-        # Draw buttons
-        if button_skip.visible and len(get_used_cards(card_rects)) == 0:
-            button_skip.draw_at(screen, 1020, 10)
-
-        button_play.draw_at(screen, 1020, 180)
-        
-        l = min(ROOM_SIZE, deck.size())
-        for i in range(l):
-            if card_rects[i][1]: continue
-            card = deck.top(ROOM_SIZE)[i]
-            if chosen_card == i:
-                pygame.draw.rect(screen, (255, 0, 0), card_rects[i][0].inflate(12, 12), 51, border_radius=12)
-                if Deck.card_suit(card) in ('C', 'S'):
-                    rank = Deck.card_rank(card)
-                    if weapon_current and (weapon_last_slain is None or rank < (weapon_last_slain or 0)):
-                        button_force_fists.draw_at(screen, card_rects[i][0].left, card_rects[i][0].bottom + 10)
-                        
-            screen.blit(all_images[card], card_rects[i][0].topleft)
-            
-        if weapon_current is not None and weapon_card is not None:            
-            if weapon_last_killed is not None:
-                killed_img = all_images[weapon_last_killed]
-                killed_pos = (1220, 10)
-                screen.blit(killed_img, killed_pos)
-
-            weapon_img = all_images[weapon_card]
-            weapon_pos = (1270, 10)
-            screen.blit(weapon_img, weapon_pos)
-        
-        hp_bar.draw(screen, hp, max_hp)
-        cards_bar.draw(screen, deck.size(), test_deck.size())
-
-        pygame.display.flip()
-    
+        draw_room()    
     clock.tick(60)
         
 
