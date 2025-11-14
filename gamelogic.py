@@ -68,7 +68,8 @@ class DungeonState:
         self.weapon_current = None
         self.weapon_last_killed = None
         self.room = CardHand(self.deck, ROOM_SIZE)
-        self.chosen_card = None  
+        self.chosen_card = None 
+        self.healead_this_round = False
 
 
 class GameController:
@@ -95,7 +96,9 @@ class GameController:
                 use_fists
             )
         elif suit == 'H':
-            self.dungeon.hp = heal(self.dungeon.hp, card)
+            if self.dungeon.healead_this_round is False:
+                self.dungeon.hp = heal(self.dungeon.hp, card)
+                self.dungeon.healead_this_round = True
         elif suit == 'D':
             self.dungeon.weapon_current = card
             self.dungeon.weapon_last_killed = None
@@ -114,6 +117,7 @@ class GameController:
         self.dungeon.room = CardHand(self.dungeon.deck, ROOM_SIZE)
         self.dungeon.chosen_card = None
         
+        self.dungeon.healead_this_round = False
         return True
     
     def select_card(self, card):
