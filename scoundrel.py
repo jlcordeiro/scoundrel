@@ -61,6 +61,7 @@ assert battle(31, 20, 5, None, False) == (19, 5, 6)  # Clubs rank 6 with weapon 
 assert battle(31, 20, 5, 4, False) == (14, 5, 4)  # Clubs rank 6 with weapon but monster is stronger than what is supposed
 assert battle(44, 20, 5, 4, False) == (14, 5, 4)  # Same as above but spades
 
+test_deck = Deck(shuffled=False)
 
 pygame.init()
 WIDTH, HEIGHT = 1800, 600
