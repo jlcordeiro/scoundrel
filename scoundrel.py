@@ -11,6 +11,8 @@ WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
 GRAY = (200, 200, 200)
 
+CARD_WIDTH = 240
+
 def print_card(card):
     rank = Deck.card_rank(card)
     suit = Deck.card_suit(card)
@@ -81,11 +83,42 @@ for i in range(0, 52):
 offset_x, offset_y = 0, 0
 
 # ---- Simple Button ----
-skip_rect = pygame.Rect(1020, 10, 160, 160)
-skip_text = font.render("SKIP", True, BLACK)
-play_rect = pygame.Rect(1020, 180, 160, 160)
-play_text = font.render("PLAY", True, BLACK)
+class Button:
+    def __init__(self, width, height, text):
+        self.rect = pygame.Rect(-50, -50, width, height)
+        self.text = font.render("Use Fists", True, BLACK)
+        self.visible = False
+        self.toggled = False
+        self.color_on = (0, 255, 0)
+        self.color_off = GRAY
+    
+    def draw_at(self, x, y):
+        self.rect.x = x + 10
+        self.rect.y = y
+        self.visible = True
+        
+        draw_color = self.color_on if self.toggled else self.color_off
+        pygame.draw.rect(screen, draw_color, self.rect, border_radius=12)
+        text_rect = self.text.get_rect(center=self.rect.center)
+        screen.blit(self.text, text_rect)
+        
+    def toggle_if_clicked(self, mouse_pos):
+        if self.rect.collidepoint(mouse_pos) and self.visible:
+            self.toggled = not self.toggled
+            return True
+        return False
+    
+    def disable(self):
+        self.visible = False
+        self.toggled = False
 
+button_force_fists = Button(CARD_WIDTH - 20, 50, "Use Fists")
+
+skip_rect = pygame.Rect(1020, 10, 160, 160)
+play_rect = pygame.Rect(1020, 180, 160, 160)
+
+skip_text = font.render("SKIP", True, BLACK)
+play_text = font.render("PLAY", True, BLACK)
 
 # ---- Main Loop ----
 clock = pygame.time.Clock()
@@ -137,10 +170,8 @@ card_rects = get_room_images(deck)
 
 debug_text = ""
 chosen_card = None
-force_fists = False
 previous_input_was_skip = False
 redraw = True
-force_fists_rect = None
 while hp > 0 and deck.size() >= ROOM_SIZE:
 
     for event in pygame.event.get():
@@ -170,14 +201,10 @@ while hp > 0 and deck.size() >= ROOM_SIZE:
                     previous_input_was_skip = True
                     chosen_card = None
                     card_rects = get_room_images(deck)
-                    force_fists_rect = None
-                    force_fists = False
+                    button_force_fists.disable()
                     redraw = True
                     
-            if force_fists_rect and force_fists_rect.collidepoint(event.pos):
-                force_fists = not force_fists
-                redraw = True
-
+            redraw = redraw or button_force_fists.toggle_if_clicked(event.pos)
 
             if play_rect.collidepoint(event.pos):
                 
@@ -187,7 +214,7 @@ while hp > 0 and deck.size() >= ROOM_SIZE:
 
                     if suit in ('C', 'S'):
                         prev_weapon_last_slain = weapon_last_slain
-                        (hp, weapon_current, weapon_last_slain) = battle(card, hp, weapon_current, weapon_last_slain, force_fists)
+                        (hp, weapon_current, weapon_last_slain) = battle(card, hp, weapon_current, weapon_last_slain, button_force_fists.toggled)
                         if weapon_last_slain and weapon_last_slain != prev_weapon_last_slain:
                             weapon_last_killed = card
                     elif suit in ('H'):
@@ -209,8 +236,7 @@ while hp > 0 and deck.size() >= ROOM_SIZE:
 
                     chosen_card = None
                     previous_input_was_skip = False
-                    force_fists_rect = None
-                    force_fists = False
+                    button_force_fists.disable()
                     redraw = True
 
         # ---- Mouse button up ----
@@ -237,8 +263,7 @@ while hp > 0 and deck.size() >= ROOM_SIZE:
         if not previous_input_was_skip and len(get_used_cards(card_rects)) == 0:
             pygame.draw.rect(screen, GRAY, skip_rect)
             screen.blit(skip_text, (skip_rect.x + 50, skip_rect.y + 100))
-        else:
-            pass  # Skip button disabled
+
         pygame.draw.rect(screen, GRAY, play_rect)
         screen.blit(play_text, (play_rect.x + 50, play_rect.y + 100))
         
@@ -247,17 +272,11 @@ while hp > 0 and deck.size() >= ROOM_SIZE:
             if card_rects[i][1]: continue
             card = deck.top(ROOM_SIZE)[i]
             if chosen_card == i:
-                pygame.draw.rect(screen, (255, 0, 0), card_rects[i][0].inflate(12, 12), 51)
+                pygame.draw.rect(screen, (255, 0, 0), card_rects[i][0].inflate(12, 12), 51, border_radius=12)
                 if Deck.card_suit(card) in ('C', 'S'):
                     rank = Deck.card_rank(card)
                     if weapon_current and (weapon_last_slain is None or rank < (weapon_last_slain or 0)):
-                        # below the card, show a button to force fists
-                        
-                        ff_color = (0, 255, 0) if force_fists else GRAY
-                        force_fists_rect = pygame.Rect(card_rects[i][0].left, card_rects[i][0].bottom + 10, 200, 50)
-                        pygame.draw.rect(screen, ff_color, force_fists_rect)
-                        ff_text = font.render("Force Fists", True, BLACK)
-                        screen.blit(ff_text, (force_fists_rect.x + 20, force_fists_rect.y + 10))
+                        button_force_fists.draw_at(card_rects[i][0].left, card_rects[i][0].bottom + 10)
                         
             screen.blit(all_images[card], card_rects[i][0].topleft)
             
