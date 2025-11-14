@@ -33,6 +33,7 @@ class Deck:
         assert len([i for i in deck if Deck.card_suit(i) == 'C']) == 13
         
         self.deck = deck
+        self.initial_size_value = len(deck)
 
     def card_suit(card):
         assert card >= 0 and card < 52
@@ -43,8 +44,14 @@ class Deck:
         rank = 1 + card % 13
         return 14 if rank == 1 else rank
     
+    def card_is_monster(card):
+        return Deck.card_suit(card) in ('C', 'S')
+    
     def size(self):
         return len(self.deck)
+    
+    def initial_size(self):
+        return self.initial_size_value
     
     def move_to_end(self, n):
         self.deck = self.deck[n:] + self.deck[0:n]
@@ -55,3 +62,17 @@ class Deck:
     def remove(self, cards):
         for card in cards:
             self.deck.remove(card)
+            
+
+class Card:
+    def __init__(self, card):
+        self.card = card
+        self.used = False
+    
+    
+class CardHand:
+    def __init__(self, deck, hand_size):
+        self.cards = [Card(card) for card in deck.top(hand_size)    ]
+        
+    def get_used(self):
+        return [c.card for c in self.cards if c.used]
