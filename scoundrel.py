@@ -62,33 +62,6 @@ assert battle(31, 20, 5, 4, False) == (14, 5, 4)  # Clubs rank 6 with weapon but
 assert battle(44, 20, 5, 4, False) == (14, 5, 4)  # Same as above but spades
 
 
-def validate_input(choice, previous_input_was_skip):
-    if choice == 'skip':
-        if previous_input_was_skip:
-            return False, True
-        else:
-            return True, True
-    
-    cards = choice.split(',')
-    if len(cards) != ROOM_SIZE - 1:
-        return False, previous_input_was_skip
-    
-    if not all (c in ['0', '1', '2', '3','0f', '1f', '2f', '3f'] for c in cards):
-        return False, previous_input_was_skip
-
-    return True, False
-
-assert validate_input('skip', False) == (True, True)
-assert validate_input('skip', True) == (False, True)
-assert validate_input('1,2', False) == (False, False)
-assert validate_input('0,1,2,3', False) == (False, False)
-assert validate_input('1,2,4', True) == (False, True)
-assert validate_input('1,2,3w', True) == (False, True)
-assert validate_input('1,2,f3', True) == (False, True)
-assert validate_input('1,2,3f', True) == (True, False)
-assert validate_input('1f,2,3', False) == (True, False)
-
-
 def get_card_actions(input_str, deck):
     options = input_str.split(',')
     assert len(options) == ROOM_SIZE - 1
