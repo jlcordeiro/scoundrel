@@ -86,7 +86,7 @@ offset_x, offset_y = 0, 0
 class Button:
     def __init__(self, width, height, text):
         self.rect = pygame.Rect(-50, -50, width, height)
-        self.text = font.render("Use Fists", True, BLACK)
+        self.text = font.render(text, True, BLACK)
         self.visible = False
         self.toggled = False
         self.color_on = (0, 255, 0)
@@ -102,8 +102,11 @@ class Button:
         text_rect = self.text.get_rect(center=self.rect.center)
         screen.blit(self.text, text_rect)
         
+    def collideswith(self, mouse_pos):
+        return self.rect.collidepoint(mouse_pos) and self.visible
+        
     def toggle_if_clicked(self, mouse_pos):
-        if self.rect.collidepoint(mouse_pos) and self.visible:
+        if self.collideswith(mouse_pos):
             self.toggled = not self.toggled
             return True
         return False
@@ -113,12 +116,10 @@ class Button:
         self.toggled = False
 
 button_force_fists = Button(CARD_WIDTH - 20, 50, "Use Fists")
+button_play = Button(160, 160, "PLAY")
+button_skip = Button(160, 160, "SKIP")
+button_skip.visible = True
 
-skip_rect = pygame.Rect(1020, 10, 160, 160)
-play_rect = pygame.Rect(1020, 180, 160, 160)
-
-skip_text = font.render("SKIP", True, BLACK)
-play_text = font.render("PLAY", True, BLACK)
 
 # ---- Main Loop ----
 clock = pygame.time.Clock()
@@ -170,7 +171,6 @@ card_rects = get_room_images(deck)
 
 debug_text = ""
 chosen_card = None
-previous_input_was_skip = False
 redraw = True
 while hp > 0 and deck.size() >= ROOM_SIZE:
 
@@ -194,20 +194,18 @@ while hp > 0 and deck.size() >= ROOM_SIZE:
                     chosen_card = idx
                     redraw = True
                     break
-
-            if skip_rect.collidepoint(event.pos):
-                if not previous_input_was_skip and len(get_used_cards(card_rects)) == 0:
-                    deck.move_to_end(ROOM_SIZE)
-                    previous_input_was_skip = True
-                    chosen_card = None
-                    card_rects = get_room_images(deck)
-                    button_force_fists.disable()
-                    redraw = True
-                    
             redraw = redraw or button_force_fists.toggle_if_clicked(event.pos)
 
-            if play_rect.collidepoint(event.pos):
-                
+            if button_skip.collideswith(event.pos):
+                if len(get_used_cards(card_rects)) == 0:
+                    deck.move_to_end(ROOM_SIZE)
+                    chosen_card = None
+                    card_rects = get_room_images(deck)
+                    button_skip.disable()
+                    button_force_fists.disable()
+                    redraw = True
+
+            if button_play.collideswith(event.pos):              
                 if chosen_card is not None:
                     card = deck.top(ROOM_SIZE)[chosen_card]
                     suit = Deck.card_suit(card)
@@ -233,9 +231,9 @@ while hp > 0 and deck.size() >= ROOM_SIZE:
                     if len(used_cards) == ROOM_SIZE - 1:
                         deck.remove(used_cards)
                         card_rects = get_room_images(deck)
+                        button_skip.visible = True
 
                     chosen_card = None
-                    previous_input_was_skip = False
                     button_force_fists.disable()
                     redraw = True
 
@@ -260,12 +258,10 @@ while hp > 0 and deck.size() >= ROOM_SIZE:
         screen.fill(WHITE)
 
         # Draw buttons
-        if not previous_input_was_skip and len(get_used_cards(card_rects)) == 0:
-            pygame.draw.rect(screen, GRAY, skip_rect)
-            screen.blit(skip_text, (skip_rect.x + 50, skip_rect.y + 100))
+        if button_skip.visible and len(get_used_cards(card_rects)) == 0:
+            button_skip.draw_at(1020, 10)
 
-        pygame.draw.rect(screen, GRAY, play_rect)
-        screen.blit(play_text, (play_rect.x + 50, play_rect.y + 100))
+        button_play.draw_at(1020, 180)
         
         l = min(ROOM_SIZE, deck.size())
         for i in range(l):
