@@ -1,15 +1,15 @@
+import sys
+
+import pygame
+pygame.init()
+
 import Deck
 from Deck import Deck, SUITS
-import pygame
-import sys
+from widgets import Button, ProgressBar
 
 ROOM_SIZE = 4
 FISTS = 0
 max_hp = 20
-
-WHITE = (255, 255, 255)
-BLACK = (0, 0, 0)
-GRAY = (200, 200, 200)
 
 CARD_WIDTH = 240
 
@@ -65,7 +65,6 @@ assert battle(44, 20, 5, 4, False) == (14, 5, 4)  # Same as above but spades
 
 test_deck = Deck(shuffled=False)
 
-pygame.init()
 WIDTH, HEIGHT = 1800, 600
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Scoundrel")
@@ -83,60 +82,16 @@ for i in range(0, 52):
 offset_x, offset_y = 0, 0
 
 # ---- Simple Button ----
-class Button:
-    def __init__(self, width, height, text):
-        self.rect = pygame.Rect(-50, -50, width, height)
-        self.text = font.render(text, True, BLACK)
-        self.visible = False
-        self.toggled = False
-        self.color_on = (0, 255, 0)
-        self.color_off = GRAY
-    
-    def draw_at(self, x, y):
-        self.rect.x = x + 10
-        self.rect.y = y
-        self.visible = True
-        
-        draw_color = self.color_on if self.toggled else self.color_off
-        pygame.draw.rect(screen, draw_color, self.rect, border_radius=12)
-        text_rect = self.text.get_rect(center=self.rect.center)
-        screen.blit(self.text, text_rect)
-        
-    def collideswith(self, mouse_pos):
-        return self.rect.collidepoint(mouse_pos) and self.visible
-        
-    def toggle_if_clicked(self, mouse_pos):
-        if self.collideswith(mouse_pos):
-            self.toggled = not self.toggled
-            return True
-        return False
-    
-    def disable(self):
-        self.visible = False
-        self.toggled = False
-
 button_force_fists = Button(CARD_WIDTH - 20, 50, "Use Fists")
 button_play = Button(160, 160, "PLAY")
 button_skip = Button(160, 160, "SKIP")
 button_skip.visible = True
 
+hp_bar = ProgressBar(10, 400, 600, 50, barcolor=(200, 0, 0))
+cards_bar = ProgressBar(10, 460, 600, 50, barcolor=(0, 200, 0))
 
 # ---- Main Loop ----
 clock = pygame.time.Clock()
-
-
-def draw_bar(surface, val, max, x, y, w=200, h=25, barcolor=(0, 200, 0)):
-    pygame.draw.rect(surface, (0, 0, 0), (x, y, w, h), 2)
-    fill = int((val / max) * (w - 4))
-    pygame.draw.rect(surface, (200, 0, 0), (x + 2, y + 2, fill, h - 4))
-    text = font.render(f"{val}/{max}", True, (70, 70, 70))
-    screen.blit(text, (x + w + 70, y))  # adjust position
-
-def draw_hp_bar(surface, current_hp, max_hp, x, y, w=200, h=25):
-    draw_bar(surface, current_hp, max_hp, x, y, w=200, h=25, barcolor=(200, 0, 0))
-
-def draw_progress_bar(surface, current_size, max_size, x, y, w=200, h=25):
-    draw_bar(surface, current_size, max_size, x, y, w=200, h=25, barcolor=(0, 200, 0))
 
 deck = Deck()
 hp = max_hp
@@ -255,13 +210,13 @@ while hp > 0 and deck.size() >= ROOM_SIZE:
     # ---- Drawing ----
     if redraw:
         redraw = False
-        screen.fill(WHITE)
+        screen.fill((255, 255, 255))
 
         # Draw buttons
         if button_skip.visible and len(get_used_cards(card_rects)) == 0:
-            button_skip.draw_at(1020, 10)
+            button_skip.draw_at(screen, 1020, 10)
 
-        button_play.draw_at(1020, 180)
+        button_play.draw_at(screen, 1020, 180)
         
         l = min(ROOM_SIZE, deck.size())
         for i in range(l):
@@ -272,7 +227,7 @@ while hp > 0 and deck.size() >= ROOM_SIZE:
                 if Deck.card_suit(card) in ('C', 'S'):
                     rank = Deck.card_rank(card)
                     if weapon_current and (weapon_last_slain is None or rank < (weapon_last_slain or 0)):
-                        button_force_fists.draw_at(card_rects[i][0].left, card_rects[i][0].bottom + 10)
+                        button_force_fists.draw_at(screen, card_rects[i][0].left, card_rects[i][0].bottom + 10)
                         
             screen.blit(all_images[card], card_rects[i][0].topleft)
             
@@ -285,16 +240,9 @@ while hp > 0 and deck.size() >= ROOM_SIZE:
             weapon_img = all_images[weapon_card]
             weapon_pos = (1270, 10)
             screen.blit(weapon_img, weapon_pos)
-
-
-        # Draw info text
-        monsters_left = sum([Deck.card_rank(c) for c in deck.deck if Deck.card_suit(c) in ('C', 'S')])
-        info_text = f"Score: -{monsters_left}"
-        info_surface = font.render(info_text, True, BLACK)
-        screen.blit(info_surface, (50, 500))
         
-        draw_hp_bar(screen, hp, max_hp, 10, 400, 600, 50)
-        draw_progress_bar(screen, deck.size(), test_deck.size(), 10, 460, 600, 50)
+        hp_bar.draw(screen, hp, max_hp)
+        cards_bar.draw(screen, deck.size(), test_deck.size())
 
         pygame.display.flip()
     
