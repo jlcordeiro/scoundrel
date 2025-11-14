@@ -162,19 +162,22 @@ weapon_last_killed = None
 def get_room_images(deck):
     global all_images
     result = []
-    for i in range(ROOM_SIZE):
-        card = deck.top(ROOM_SIZE)[i]
+
+    i = 0
+    for card in deck.top(ROOM_SIZE):
         img = all_images[card]
         rect = img.get_rect(topleft=(10 + i * 250, 10))
         result.append([rect, False])
+        i += 1
     
     return result
 
 def get_used_cards(card_rects):
     used = []
-    for i in range(ROOM_SIZE):
+    l = len(card_rects)
+    for i in range(l):
         if card_rects[i][1]:
-            used.append(deck.top(ROOM_SIZE)[i])
+            used.append(deck.top(l)[i])
     return used
 
 
@@ -190,6 +193,9 @@ while hp > 0 and deck.size() >= ROOM_SIZE:
 
     for event in pygame.event.get():
         if hp <= 0:
+            break
+        
+        if deck.size() < ROOM_SIZE:
             break
 
         if event.type == pygame.QUIT:
@@ -284,7 +290,8 @@ while hp > 0 and deck.size() >= ROOM_SIZE:
         pygame.draw.rect(screen, GRAY, play_rect)
         screen.blit(play_text, (play_rect.x + 50, play_rect.y + 100))
         
-        for i in range(ROOM_SIZE):
+        l = min(ROOM_SIZE, deck.size())
+        for i in range(l):
             if card_rects[i][1]: continue
             card = deck.top(ROOM_SIZE)[i]
             if chosen_card == i:
@@ -315,7 +322,7 @@ while hp > 0 and deck.size() >= ROOM_SIZE:
 
         # Draw info text
         monsters_left = sum([Deck.card_rank(c) for c in deck.deck if Deck.card_suit(c) in ('C', 'S')])
-        info_text = f"Score: {monsters_left}"
+        info_text = f"Score: -{monsters_left}"
         info_surface = font.render(info_text, True, BLACK)
         screen.blit(info_surface, (50, 500))
         

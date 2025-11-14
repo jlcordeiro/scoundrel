@@ -50,7 +50,7 @@ class Deck:
         self.deck = self.deck[n:] + self.deck[0:n]
         
     def top(self, n):
-        return self.deck[0:n]
+        return self.deck[0:min(n, len(self.deck))]
     
     def remove(self, cards):
         for card in cards:
