@@ -1,10 +1,18 @@
 import pygame
+from Deck import Deck
+from gamelogic import ROOM_SIZE
+
+WIDTH, HEIGHT = 1800, 600
+
+CARD_WIDTH = 240
 
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
 GRAY = (200, 200, 200)
 
 font = pygame.font.SysFont(None, 36)
+
+
 
 class Button:
     def __init__(self, width, height, text):
@@ -56,3 +64,27 @@ class ProgressBar:
         pygame.draw.rect(surface, self.barcolor, (self.x + 2, self.y + 2, fill, self.h - 4))
         text = font.render(f"{val}/{max}", True, (70, 70, 70))
         surface.blit(text, (self.x + self.w + 70, self.y))  # adjust position
+        
+        
+# ---- Main Loop Assets ----
+
+CARD_IMGS = {}
+for i in range(0, 52):    
+    rank = Deck.card_rank(i)
+    suit = Deck.card_suit(i)
+    filename = f"png/{suit}{rank}.png"
+    CARD_IMGS[i] = pygame.image.load(filename)
+
+
+CARD_RECTS = []
+FIST_RECTS = []
+card_height = CARD_IMGS[0].get_height()
+for i in range(ROOM_SIZE):
+    x = 10 + i * (CARD_WIDTH + 10)
+    
+    rect = pygame.Rect(x, 10, CARD_WIDTH, card_height)
+    CARD_RECTS.append(rect)
+    
+    fist_rect = pygame.Rect(10 + x, rect.bottom + 5, CARD_WIDTH - 40, 10)
+    FIST_RECTS.append(fist_rect)
+    
