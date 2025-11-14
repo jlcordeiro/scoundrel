@@ -84,18 +84,9 @@ pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_ARROW)
 
 
 all_images = {}
-for i in range(0, 52):
-    rank_map = {11: 'J', 12: 'Q', 13: 'K', 14: 'A'}
-    suit_map = {'H': 'C', 'D': 'H', 'C': 'D', 'S': 'S'} # the images we got were completely broken. fix.
-    
+for i in range(0, 52):    
     rank = Deck.card_rank(i)
-    if rank in rank_map:
-        rank = rank_map[rank]
-
     suit = Deck.card_suit(i)
-    if suit in suit_map:
-        suit = suit_map[suit]
-        
     filename = f"png/{suit}{rank}.png"
     all_images[i] = pygame.image.load(filename)
 
