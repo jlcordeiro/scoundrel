@@ -62,19 +62,6 @@ assert battle(31, 20, 5, 4, False) == (14, 5, 4)  # Clubs rank 6 with weapon but
 assert battle(44, 20, 5, 4, False) == (14, 5, 4)  # Same as above but spades
 
 
-def get_card_actions(input_str, deck):
-    options = input_str.split(',')
-    assert len(options) == ROOM_SIZE - 1
-    room = deck.top(ROOM_SIZE)
-    return tuple((room[int(c[0])], 'f' in c) for c in options)
-
-test_deck = Deck(shuffled=False)
-assert get_card_actions("0,1,2", test_deck) == ((1, False), (2, False), (3, False))
-assert get_card_actions("3,0,2", test_deck) == ((4, False), (1, False), (3, False))
-assert get_card_actions("3f,0,2", test_deck) == ((4, True), (1, False), (3, False))
-
-
-
 pygame.init()
 WIDTH, HEIGHT = 1800, 600
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
